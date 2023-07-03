@@ -1,0 +1,4 @@
+/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/Applications/CLion.app/Contents/bin/ninja/mac/ninja -G Ninja -S /Users/lloydretro2/Desktop/华科/npbenchmark-main/SDK.GCP/ClionMyGCP -B /Users/lloydretro2/Desktop/华科/npbenchmark-main/SDK.GCP/ClionMyGCP/cmake-build-debug
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Users/lloydretro2/Desktop/华科/npbenchmark-main/SDK.GCP/ClionMyGCP/cmake-build-debug
