@@ -40,12 +40,12 @@ int generateRandomInt(int lowerBound, int upperBound)
     return randNum;
 }
 
-void printAdjColorTable(vector<vector<int>> matrix)
+void printAdjColorTable(GraphColoring gc, int** matrix)
 {
-    for (unsigned i = 0; i < matrix.size(); i++)
+    for (unsigned i = 0; i < gc.nodeNum; i++)
     {
         cout << "line " << i << "\t: ";
-        for (unsigned j = 0; j < matrix[i].size(); j++)
+        for (unsigned j = 0; j < gc.colorNum; j++)
         {
             cout << matrix[i][j] << " ";
         }
@@ -128,7 +128,16 @@ vector<int> generateInitialSolution(int n, int k)
     return solution;
 }
 
-void solutionToMatrix(GraphColoring &gc, vector<int> solution, vector<vector<int>> &matrix)
+//void solutionToMatrix(GraphColoring &gc, vector<int> solution, vector<vector<int>>& matrix)
+//{
+//    for (unsigned i = 0; i < gc.edges.size(); i++)
+//    {
+//        matrix[gc.edges[i][0]][solution[gc.edges[i][1]]]++;
+//        matrix[gc.edges[i][1]][solution[gc.edges[i][0]]]++;
+//    }
+//}
+
+void solutionToMatrix(GraphColoring &gc, vector<int> solution, int** matrix)
 {
     for (unsigned i = 0; i < gc.edges.size(); i++)
     {
@@ -137,19 +146,19 @@ void solutionToMatrix(GraphColoring &gc, vector<int> solution, vector<vector<int
     }
 }
 
-int findConflictNode(vector<int> soluton, vector<vector<int>> matrix)
+int findConflictNode(vector<int> solution, vector<vector<int>> matrix)
 {
     int currentConflictValue = 0;
     vector<int> conflictIndex;
-    for (unsigned i = 0; i < soluton.size(); i++)
+    for (unsigned i = 0; i < solution.size(); i++)
     {
-        if (matrix[i][soluton[i]] > currentConflictValue)
+        if (matrix[i][solution[i]] > currentConflictValue)
         {
-            currentConflictValue = matrix[i][soluton[i]];
+            currentConflictValue = matrix[i][solution[i]];
             conflictIndex.clear();
             conflictIndex.push_back(i);
         }
-        else if (matrix[i][soluton[i]] == currentConflictValue)
+        else if (matrix[i][solution[i]] == currentConflictValue)
         {
             conflictIndex.push_back(i);
         }
@@ -216,12 +225,12 @@ vector<vector<int>> createTabuTable(GraphColoring &gc)
     return tabuTable;
 }
 
-int calculateDelt(int node, int originalColor, int newColor, vector<vector<int>> matrix)
+int calculateDelta(int node, int originalColor, int newColor, int** matrix)
 {
     return matrix[node][newColor] - matrix[node][originalColor];
 }
 
-array<int, 4> findMove(GraphColoring &gc, vector<int> solution, vector<vector<int>> matrix, vector<vector<int>> tabuTable, int iter, int bestDeltaGlobal)
+array<int, 4> findMove(GraphColoring &gc, vector<int> solution, int** matrix, int** tabuTable, int iter, int bestDeltaGlobal)
 {
     using move = std::array<int, 3>;
     std::array<int, 3> currentMove{};
@@ -251,7 +260,7 @@ array<int, 4> findMove(GraphColoring &gc, vector<int> solution, vector<vector<in
                 if (k != originalColor)
                 {
 
-                    currentDelta = calculateDelt(i, originalColor, k, matrix);
+                    currentDelta = calculateDelta(i, originalColor, k, matrix);
                     currentColor = k;
                     currentMove = {i, originalColor, currentColor};
 
@@ -263,7 +272,7 @@ array<int, 4> findMove(GraphColoring &gc, vector<int> solution, vector<vector<in
                             bestDeltaTabu = currentDelta;
                         } else if (currentDelta == bestDeltaTabu) {
                             if (generateRandomInt(0, 1) == 1) {
-                                bestDeltaTabu = currentDelta;
+                                bestDeltaTabuMove = currentMove;
                             }
                         }
                     }
@@ -279,7 +288,7 @@ array<int, 4> findMove(GraphColoring &gc, vector<int> solution, vector<vector<in
                         {
                             if (generateRandomInt(0, 1) == 1)
                             {
-                                bestDeltaNonTabu = currentDelta;
+                                bestDeltaNonTabuMove = currentMove;
                             }
                         }
 
@@ -312,7 +321,7 @@ array<int, 4> findMove(GraphColoring &gc, vector<int> solution, vector<vector<in
     return returnMove;
 }
 
-void makeMove(array<int, 4> move, int &f, int iter, vector<int> &solution, vector<vector<int>> &matrix, vector<vector<int>> adj, vector<vector<int>> &tabuTable, int &bestDeltaGlobal)
+void makeMove(array<int, 4> move, int &f, int iter, vector<int> &solution, int** matrix, vector<vector<int>> adj, int** tabuTable, int &bestDeltaGlobal)
 {
     int node = move[0];
     int originalColor = move[1];
@@ -359,7 +368,7 @@ int calculateInitialF(GraphColoring &gc, vector<int> solution)
     return f;
 }
 
-void tabuSearch(GraphColoring &gc, vector<int> &solution, vector<vector<int>> &matrix, vector<vector<int>> adj)
+void tabuSearch(GraphColoring &gc, vector<int> &solution, int** matrix, vector<vector<int>> adj)
 {
     // Initial iteration = 0
     int iter = 0;
@@ -368,9 +377,21 @@ void tabuSearch(GraphColoring &gc, vector<int> &solution, vector<vector<int>> &m
     array<int, 4> move;
 
     // Initialize tabu table
-    vector<vector<int>> tabuTable = createTabuTable(gc);
+    int** tabuTable = new int*[gc.nodeNum];
+    for (int i = 0; i < gc.nodeNum; i++)
+    {
+        tabuTable[i] = new int[gc.colorNum];
+    }
+    for (int i = 0; i < gc.nodeNum; i++)
+    {
+        for (int j = 0; j < gc.colorNum; j++)
+        {
+            tabuTable[i][j] = 0;
+        }
+    }
 
-    for (iter = 0; iter < 10000; iter++)
+
+    for (iter = 0; iter < 99999999; iter++)
     {
         move = findMove(gc, solution, matrix, tabuTable, iter, bestDeltaGlobal);
 
@@ -406,9 +427,9 @@ void tabuSearch(GraphColoring &gc, vector<int> &solution, vector<vector<int>> &m
     // Print information after
     cout << iter << endl;
     cout << "matrix: " << endl;
-    printAdjColorTable(matrix);
+    printAdjColorTable(gc, matrix);
     cout << "tabu: " << endl;
-    printAdjColorTable(tabuTable);
+    printAdjColorTable(gc, tabuTable);
     for (int i = 0; i < solution.size(); i++)
     {
         cout << i << ": "
@@ -447,7 +468,13 @@ int main(int argc, char *argv[])
     vector<vector<int>> adjList = createAdjList(gc);
 
     // Creating 2d vector for Adjacent Color Table
-    vector<vector<int>> adjacentColorTable = createACT(gc.nodeNum, gc.colorNum);
+    vector<vector<int>> adjacentColorTable2 = createACT(gc.nodeNum, gc.colorNum);
+    int** adjacentColorTable = new int*[gc.nodeNum];
+    for (int i = 0; i < gc.nodeNum; i++)
+    {
+        adjacentColorTable[i] = new int[gc.colorNum];
+    }
+
     // cout << adjacentColorTable.size() << endl;
     // for (unsigned i = 0; i < adjacentColorTable.size(); i++)
     // {
@@ -469,15 +496,17 @@ int main(int argc, char *argv[])
 
     // Solution to matrix
     solutionToMatrix(gc, solution, adjacentColorTable);
-    // for (unsigned i = 0; i < adjacentColorTable.size(); i++)
-    // {
-    //     cout << "line " << i << ": ";
-    //     for (unsigned j = 0; j < adjacentColorTable[i].size(); j++)
-    //     {
-    //         cout << adjacentColorTable[i][j] << " ";
-    //     }
-    //     cout << endl;
-    // }
+//     for (unsigned i = 0; i < gc.nodeNum; i++)
+//     {
+//         cout << "line " << i << ": ";
+//         for (unsigned j = 0; j < gc.colorNum; j++)
+//         {
+//             cout << adjacentColorTable[i][j] << " ";
+//         }
+//         cout << endl;
+//     }
+
+
 
     // Find current conflict
     // int conflictIndex;
