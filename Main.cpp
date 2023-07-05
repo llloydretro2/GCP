@@ -402,6 +402,8 @@ void tabuSearch(GraphColoring &gc, vector<int> &solution, vector<vector<int>> &m
             break;
         }
     }
+
+    // Print information after
     cout << iter << endl;
     cout << "matrix: " << endl;
     printAdjColorTable(matrix);
