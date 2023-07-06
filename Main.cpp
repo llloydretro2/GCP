@@ -240,22 +240,22 @@ int calculateDelta(int node, int originalColor, int newColor, int** matrix)
 array<int, 4> findMove(GraphColoring &gc, int* solution, int** matrix, int** tabuTable, int iter, int bestDeltaGlobal)
 {
     using move = std::array<int, 3>;
-    std::array<int, 3> currentMove{};
+//    std::array<int, 3> currentMove{};
     std::array<int, 4> returnMove{};
-//    int* currentMove = new int[3];
+    int currentMove[3];
 
     int bestDeltaTabu = gc.nodeNum+1;
     int bestDeltaNonTabu = gc.nodeNum+1;
-    std::array<int, 3> bestDeltaTabuMove = {-1, -1, -1};
-    std::array<int, 3> bestDeltaNonTabuMove = {-1, -1, -1};
-//    int* bestDeltaTabuMove = new int[3];
-//    bestDeltaTabuMove[0] = -1;
-//    bestDeltaTabuMove[1] = -1;
-//    bestDeltaTabuMove[2] = -1;
-//    int* bestDeltaNonTabuMove = new int[3];
-//    bestDeltaNonTabuMove[0] = -1;
-//    bestDeltaNonTabuMove[1] = -1;
-//    bestDeltaNonTabuMove[2] = -1;
+//    std::array<int, 3> bestDeltaTabuMove = {-1, -1, -1};
+//    std::array<int, 3> bestDeltaNonTabuMove = {-1, -1, -1};
+    int bestDeltaTabuMove[3];
+    bestDeltaTabuMove[0] = -1;
+    bestDeltaTabuMove[1] = -1;
+    bestDeltaTabuMove[2] = -1;
+    int bestDeltaNonTabuMove[3];
+    bestDeltaNonTabuMove[0] = -1;
+    bestDeltaNonTabuMove[1] = -1;
+    bestDeltaNonTabuMove[2] = -1;
     int currentDelta;
     int originalColor;
     int currentColor;
@@ -292,7 +292,10 @@ array<int, 4> findMove(GraphColoring &gc, int* solution, int** matrix, int** tab
 
                         if (currentDelta < bestDeltaTabu)
                         {
-                            bestDeltaTabuMove = currentMove;
+                            bestDeltaTabuMove[0] = currentMove[0];
+                            bestDeltaTabuMove[1] = currentMove[1];
+                            bestDeltaTabuMove[2] = currentMove[2];
+
                             bestDeltaTabu = currentDelta;
                             sampleCount = 1;
                         }
@@ -301,7 +304,9 @@ array<int, 4> findMove(GraphColoring &gc, int* solution, int** matrix, int** tab
                             sampleCount++;
                             if (rand(0, sampleCount) == 0)
                             {
-                                bestDeltaTabuMove = currentMove;
+                                bestDeltaTabuMove[0] = currentMove[0];
+                                bestDeltaTabuMove[1] = currentMove[1];
+                                bestDeltaTabuMove[2] = currentMove[2];
                             }
                         }
                     }
@@ -315,7 +320,9 @@ array<int, 4> findMove(GraphColoring &gc, int* solution, int** matrix, int** tab
 
                         if (currentDelta < bestDeltaNonTabu)
                         {
-                            bestDeltaNonTabuMove = currentMove;
+                            bestDeltaNonTabuMove[0] = currentMove[0];
+                            bestDeltaNonTabuMove[1] = currentMove[1];
+                            bestDeltaNonTabuMove[2] = currentMove[2];
                             bestDeltaNonTabu = currentDelta;
                             sampleCount = 1;
                         }
@@ -324,7 +331,9 @@ array<int, 4> findMove(GraphColoring &gc, int* solution, int** matrix, int** tab
                             sampleCount++;
                             if (rand(0, sampleCount) == 0)
                             {
-                                bestDeltaNonTabuMove = currentMove;
+                                bestDeltaNonTabuMove[0] = currentMove[0];
+                                bestDeltaNonTabuMove[1] = currentMove[1];
+                                bestDeltaNonTabuMove[2] = currentMove[2];
                             }
                         }
                     }
@@ -451,8 +460,8 @@ void tabuSearch(GraphColoring &gc, int *solution, int** matrix, int** adj)
 
         // cout << "f before: " << f << endl;
         // cout << "bestDeltaGlobal: " << bestDeltaGlobal << endl;
-        cout << iter << "\t";
-        printMove(move);
+//        cout << iter << "\t";
+//        printMove(move);
 
 
         if (move[0] == -1)
