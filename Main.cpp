@@ -562,7 +562,7 @@ int main(int argc, char *argv[])
     int *solution = new int[gc.nodeNum];
     for (int i = 0; i < gc.nodeNum; i++)
     {
-        solution[i] = rand(0, gc.colorNum-1);
+        solution[i] = rand(0, gc.colorNum);
     }
 //     cout << gc.nodeNum << endl;
 //     for (unsigned i = 0; i < gc.nodeNum; i++)
