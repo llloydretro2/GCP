@@ -279,7 +279,7 @@ int* findMove(GraphColoring &gc, int* solution, int** matrix, int** tabuTable, i
                 if (k != originalColor)
                 {
                     currentColor = k;
-                    currentDelta = calculateDelta(i, originalColor, currentColor, matrix);
+                    currentDelta = matrix[i][currentColor] - matrix[i][originalColor];
 
 
                     // Update best if there is
