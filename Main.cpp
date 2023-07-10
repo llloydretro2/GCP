@@ -237,11 +237,12 @@ int calculateDelta(int node, int originalColor, int newColor, int** matrix)
     return matrix[node][newColor] - matrix[node][originalColor];
 }
 
-array<int, 4> findMove(GraphColoring &gc, int* solution, int** matrix, int** tabuTable, int iter, int bestDeltaGlobal)
+int* findMove(GraphColoring &gc, int* solution, int** matrix, int** tabuTable, int iter, int bestDeltaGlobal)
 {
-    using move = std::array<int, 3>;
+//    using move = std::array<int, 3>;
 //    std::array<int, 3> currentMove{};
-    std::array<int, 4> returnMove{};
+//    std::array<int, 4> returnMove{};
+    int* returnMove = new int[4];
     int currentMove[3];
 
     int bestDeltaTabu = gc.nodeNum+1;
@@ -347,26 +348,42 @@ array<int, 4> findMove(GraphColoring &gc, int* solution, int** matrix, int** tab
     {
         if (bestDeltaTabuMove[0] == -1)
         {
-            returnMove = {-1, -1, -1, 0};
+            returnMove[0] = -1;
+            returnMove[1] = -1;
+            returnMove[2] = -1;
+            returnMove[3] = 0;
+
             return returnMove;
         }
 
-        returnMove = {bestDeltaTabuMove[0], bestDeltaTabuMove[1], bestDeltaTabuMove[2], bestDeltaTabu};
+        returnMove[0] = bestDeltaTabuMove[0];
+        returnMove[1] = bestDeltaTabuMove[1];
+        returnMove[2] = bestDeltaTabuMove[2];
+        returnMove[3] = bestDeltaTabu;
+
         return returnMove;
     }
 
     if (bestDeltaNonTabuMove[0] == -1)
     {
-        returnMove = {-1, -1, -1, 0};
+        returnMove[0] = -1;
+        returnMove[1] = -1;
+        returnMove[2] = -1;
+        returnMove[3] = 0;
+
         return returnMove;
     }
 
-    returnMove = {bestDeltaNonTabuMove[0], bestDeltaNonTabuMove[1], bestDeltaNonTabuMove[2], bestDeltaNonTabu};
+    returnMove[0] = bestDeltaNonTabuMove[0];
+    returnMove[1] = bestDeltaNonTabuMove[1];
+    returnMove[2] = bestDeltaNonTabuMove[2];
+    returnMove[3] = bestDeltaNonTabu;
+
     return returnMove;
 }
 
 
-void makeMove(GraphColoring& gc, array<int, 4> move, int &f, int iter, int* solution, int** matrix, int** adj, int** tabuTable, int &bestDeltaGlobal)
+void makeMove(GraphColoring& gc, int* move, int &f, int iter, int* solution, int** matrix, int** adj, int** tabuTable, int &bestDeltaGlobal)
 {
     int node = move[0];
     int originalColor = move[1];
@@ -394,9 +411,9 @@ void makeMove(GraphColoring& gc, array<int, 4> move, int &f, int iter, int* solu
 }
 
 
-void printMove(array<int, 4> move)
+void printMove(int* move)
 {
-    for (int i = 0; i < move.size(); i++)
+    for (int i = 0; i < 4; i++)
     {
         cout << move[i] << " ";
     }
@@ -423,7 +440,7 @@ void tabuSearch(GraphColoring &gc, int *solution, int** matrix, int** adj)
     int iter = 0;
     int f = calculateInitialF(gc, solution);
     int bestDeltaGlobal = gc.nodeNum + 1;
-    array<int, 4> move;
+    int* move;
 
     // Initialize tabu table
     int** tabuTable = new int*[gc.nodeNum];
