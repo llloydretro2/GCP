@@ -239,24 +239,23 @@ int calculateDelta(int node, int originalColor, int newColor, int** matrix)
 
 int* findMove(GraphColoring &gc, int* solution, int** matrix, int** tabuTable, int iter, int bestDeltaGlobal)
 {
-//    using move = std::array<int, 3>;
-//    std::array<int, 3> currentMove{};
-//    std::array<int, 4> returnMove{};
+
     int* returnMove = new int[4];
     int currentMove[3];
 
     int bestDeltaTabu = gc.nodeNum+1;
     int bestDeltaNonTabu = gc.nodeNum+1;
-//    std::array<int, 3> bestDeltaTabuMove = {-1, -1, -1};
-//    std::array<int, 3> bestDeltaNonTabuMove = {-1, -1, -1};
+
     int bestDeltaTabuMove[3];
     bestDeltaTabuMove[0] = -1;
     bestDeltaTabuMove[1] = -1;
     bestDeltaTabuMove[2] = -1;
+
     int bestDeltaNonTabuMove[3];
     bestDeltaNonTabuMove[0] = -1;
     bestDeltaNonTabuMove[1] = -1;
     bestDeltaNonTabuMove[2] = -1;
+
     int currentDelta;
     int originalColor;
     int currentColor;
@@ -312,6 +311,7 @@ int* findMove(GraphColoring &gc, int* solution, int** matrix, int** tabuTable, i
                         }
                     }
 
+
                     // non tabu
                     else
                     {
@@ -346,16 +346,6 @@ int* findMove(GraphColoring &gc, int* solution, int** matrix, int** tabuTable, i
     // Which to return
     if (bestDeltaTabu < bestDeltaGlobal && bestDeltaTabu < bestDeltaNonTabu)
     {
-        if (bestDeltaTabuMove[0] == -1)
-        {
-            returnMove[0] = -1;
-            returnMove[1] = -1;
-            returnMove[2] = -1;
-            returnMove[3] = 0;
-
-            return returnMove;
-        }
-
         returnMove[0] = bestDeltaTabuMove[0];
         returnMove[1] = bestDeltaTabuMove[1];
         returnMove[2] = bestDeltaTabuMove[2];
@@ -457,9 +447,10 @@ void tabuSearch(GraphColoring &gc, int *solution, int** matrix, int** adj)
     }
 
 
+    // Until reaches max iteration
     for (iter = 0; iter < 99999999; iter++)
     {
-        if (iter % 100000 == 0)
+        if (iter % 300000 == 0)
         {
             cout << "iter:\t" << iter << endl;
         }
