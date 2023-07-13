@@ -33,7 +33,6 @@ int rand(int ub) { return uniform_int_distribution<int>(0, ub - 1)(pseudoRandNum
 
 using NodeColors = std::vector<ColorId>;
 
-
 void printAdjColorTable(GraphColoring gc, int** matrix)
 {
     for (unsigned i = 0; i < gc.nodeNum; i++)
@@ -97,9 +96,11 @@ vector<vector<int>> createACT(int n, int k)
     return matrix;
 }
 
-vector<vector<int>> createAdjList(GraphColoring &gc)
+int** createAdjList(GraphColoring &gc)
 {
     vector<vector<int>> adjList;
+    int** adjReturn = new int*[gc.nodeNum];
+
     for (unsigned i = 0; i < gc.nodeNum; i++)
     {
         vector<int> line;
@@ -112,6 +113,20 @@ vector<vector<int>> createAdjList(GraphColoring &gc)
         adjList[gc.edges[i][1]].push_back(gc.edges[i][0]);
     }
 
+    for (int i = 0; i < gc.nodeNum; i++)
+    {
+        adjReturn[i] = new int[gc.nodeNum];
+    }
+    for (int i = 0; i < gc.nodeNum; i++)
+    {
+        int j = 0;
+        for (; j < adjList[i].size(); j++)
+        {
+            adjReturn[i][j] = adjList[i][j];
+        }
+        adjReturn[i][j] = -1;
+    }
+
     // cout << adjList.size() << endl;
     // for (int i = 0; i < adjList.size(); i++)
     // {
@@ -122,7 +137,7 @@ vector<vector<int>> createAdjList(GraphColoring &gc)
     //     cout << endl;
     // }
 
-    return adjList;
+    return adjReturn;
 }
 
 int* generateInitialSolution(int n, int k)
@@ -130,10 +145,11 @@ int* generateInitialSolution(int n, int k)
    int* solution = new int[n];
     for (int i = 0; i < n; i++)
     {
-        solution[i] = rand(0, k - 1);
+        solution[i] = rand(0, k-1);
     }
     return solution;
 }
+
 
 //void solutionToMatrix(GraphColoring &gc, vector<int> solution, vector<vector<int>>& matrix)
 //{
@@ -146,8 +162,20 @@ int* generateInitialSolution(int n, int k)
 
 void solutionToMatrix(GraphColoring &gc, int* solution, int** matrix)
 {
+    // Clean matrix
+    for (int i = 0; i < gc.nodeNum; ++i) {
+        for (int j = 0; j < gc.colorNum; ++j) {
+            matrix[i][j] = 0;
+        }
+    }
+
+
+    int a;
+    int b;
     for (unsigned i = 0; i < gc.edges.size(); i++)
     {
+        a = solution[gc.edges[i][1]];
+        b = solution[gc.edges[i][0]];
         matrix[gc.edges[i][0]][solution[gc.edges[i][1]]]++;
         matrix[gc.edges[i][1]][solution[gc.edges[i][0]]]++;
     }
@@ -372,7 +400,6 @@ int* findMove(GraphColoring &gc, int* solution, int** matrix, int** tabuTable, i
     return returnMove;
 }
 
-
 void makeMove(GraphColoring& gc, int* move, int &f, int iter, int* solution, int** matrix, int** adj, int** tabuTable, int &bestDeltaGlobal)
 {
     int node = move[0];
@@ -400,7 +427,6 @@ void makeMove(GraphColoring& gc, int* move, int &f, int iter, int* solution, int
     }
 }
 
-
 void printMove(int* move)
 {
     for (int i = 0; i < 4; i++)
@@ -410,7 +436,7 @@ void printMove(int* move)
     cout << endl;
 }
 
-int calculateInitialF(GraphColoring &gc, int* solution)
+int calculateF(GraphColoring &gc, int* solution)
 {
     int f = 0;
     for (unsigned i = 0; i < gc.edgeNum; i++)
@@ -424,11 +450,11 @@ int calculateInitialF(GraphColoring &gc, int* solution)
     return f;
 }
 
-void tabuSearch(GraphColoring &gc, int *solution, int** matrix, int** adj)
+void tabuSearch(int maxIter, GraphColoring &gc, int *solution, int** matrix, int** adj)
 {
     // Initial iteration = 0
     int iter = 0;
-    int f = calculateInitialF(gc, solution);
+    int f = calculateF(gc, solution);
     int bestDeltaGlobal = gc.nodeNum + 1;
     int* move;
 
@@ -448,7 +474,7 @@ void tabuSearch(GraphColoring &gc, int *solution, int** matrix, int** adj)
 
 
     // Until reaches max iteration
-    for (iter = 0; iter < 99999999; iter++)
+    for (iter = 0; iter < maxIter; iter++)
     {
         if (iter % 300000 == 0)
         {
@@ -474,30 +500,274 @@ void tabuSearch(GraphColoring &gc, int *solution, int** matrix, int** adj)
 
         if (move[0] == -1)
         {
-            break;
+            return;
         }
 
         makeMove(gc, move, f, iter, solution, matrix, adj, tabuTable, bestDeltaGlobal);
 
         if (f == 0)
         {
-            break;
+            cout << iter << endl;
+            return;
         }
     }
 
     // Print information after
-    cout << iter << endl;
-    cout << "matrix: " << endl;
-    printAdjColorTable(gc, matrix);
-    cout << "tabu: " << endl;
-    printAdjColorTable(gc, tabuTable);
+//    cout << iter << endl;
+//    cout << "matrix: " << endl;
+//    printAdjColorTable(gc, matrix);
+//    cout << "tabu: " << endl;
+//    printAdjColorTable(gc, tabuTable);
+//    for (int i = 0; i < gc.nodeNum; i++)
+//    {
+//        cout << i << ": "
+//             << "color: " << solution[i] << "\tconflict: " << matrix[i][solution[i]] << endl;
+//    }
+//    cout << "f after: " << f << endl;
+
+}
+
+void printColorSet(vector<vector<int>>& colorSet)
+{
+    for (int i = 0; i < colorSet.size(); i++)
+    {
+        cout << "Color " << i << "\t:";
+        for (int j = 0; j < colorSet[i].size(); j++)
+        {
+            cout << colorSet[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+int findMaxColor(vector<vector<int>>& colorSet)
+{
+    int setSize = -1;
+    int chosenSet = -1;
+    int totalSize;
+    int currenLineSize;
+
+    totalSize = colorSet.size();
+    for (int i = 0; i < totalSize; i++)
+    {
+        currenLineSize = colorSet[i].size();
+        if (currenLineSize > setSize)
+        {
+            setSize = currenLineSize;
+            chosenSet = i;
+        }
+    }
+
+    return chosenSet;
+}
+
+void updateColorSet(int color, int iter, vector<vector<int>>& chosen, vector<vector<int>>& other, vector<vector<int>>& offSpring)
+{
+
+    int found = 0;
+    int currentNode = -1;
+
+    while (chosen[color].size() > 0)
+    {
+
+        // 逐个添加元素
+        currentNode = chosen[color].front();
+        chosen[color].erase(chosen[color].begin());
+        offSpring[iter].push_back(currentNode);
+
+        // 删除另一个的元素
+        found = 0;
+        for (int j = 0; j < other.size(); j++)
+        {
+            for (int k = 0; k < other[j].size(); k++)
+            {
+                if (currentNode == other[j][k])
+                {
+                    other[j].erase(other[j].begin() + k);
+                    found = 1;
+                    break;
+                }
+            }
+            if (found == 1)
+            {
+                break;
+            }
+        }
+    }
+
+}
+
+int* Crossover(GraphColoring& gc, int* solution1, int* solution2)
+{
+    int maxColor = -1;
+
+    // 创建颜色集
+    vector<vector<int>> colorSet1;
+    vector<vector<int>> colorSet2;
+    vector<vector<int>> offSpringColorSet;
+
+    for (unsigned i = 0; i < gc.colorNum; i++)
+    {
+        vector<int> line;
+        colorSet1.push_back(line);
+        colorSet2.push_back(line);
+        offSpringColorSet.push_back(line);
+    }
+
+    int color1;
+    int color2;
+
     for (int i = 0; i < gc.nodeNum; i++)
     {
-        cout << i << ": "
-             << "color: " << solution[i] << "\tconflict: " << matrix[i][solution[i]] << endl;
+        color1 = solution1[i];
+        color2 = solution2[i];
+        colorSet1[solution1[i]].push_back(i);
+        colorSet2[solution2[i]].push_back(i);
     }
-    cout << "f after: " << f << endl;
+
+
+
+    int* offspringSolution = new int[gc.nodeNum];
+    for (int i = 0; i < gc.colorNum; i++)
+    {
+        // 奇数S1
+        if (i % 2 == 1)
+        {
+
+            maxColor = findMaxColor(colorSet1);
+            updateColorSet(maxColor, i, colorSet1, colorSet2, offSpringColorSet);
+        }
+
+        // 偶数S2
+        else
+        {
+            maxColor = findMaxColor(colorSet2);
+            updateColorSet(maxColor, i, colorSet2, colorSet1, offSpringColorSet);
+
+        }
+    }
+
+    // 输入到Solution
+    for (int i = 0; i < gc.colorNum; ++i)
+    {
+        for (int j = 0; j < offSpringColorSet[i].size(); j++)
+        {
+            offspringSolution[offSpringColorSet[i][j]] = i;
+        }
+    }
+
+    return offspringSolution;
 }
+
+void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
+{
+    int populationSize = initialPopulationSize;
+    int bestF = gc.nodeNum * gc.nodeNum;
+    int currentF;
+    int parent1Index;
+    int parent2Index;
+    vector<int*> population;
+    int* currentSolution;
+    int* bestSolution;
+    int* offspring;
+    int** currentConflictMatrix = new int*[gc.nodeNum];
+    for (int i = 0; i < gc.nodeNum; i++)
+    {
+        currentConflictMatrix[i] = new int[gc.colorNum];
+    }
+
+
+    // Initial population
+    for (int i = 0; i < populationSize; ++i)
+    {
+        population.push_back(generateInitialSolution(gc.nodeNum, gc.colorNum));
+    }
+
+    // Initial generation tabu search
+    for (int i = 0; i < populationSize; ++i)
+    {
+        solutionToMatrix(gc, population[i], currentConflictMatrix);
+        tabuSearch(5000, gc, population[i], currentConflictMatrix, adjList);
+
+    }
+
+    // Get the best solution from initial population
+    for (int i = 0; i < populationSize; ++i) {
+
+        currentF = calculateF(gc, population[i]);
+
+        // 如果已经解决了就直接跳出程序
+        if (currentF == 0)
+        {
+            cout << "fitting solution found." << endl;
+            printSolution(gc, population[i]);
+            return;
+        }
+
+        // 更新最好的S
+        if (currentF < bestF)
+        {
+            bestF = currentF;
+        }
+    }
+
+    // 开始杂交
+    for (int i = 0; i < 100; ++i) {
+        cout << "Crossover " << i << endl;
+
+        // Selecting parents, cannot be the same
+        parent1Index = rand(0, populationSize);
+        parent2Index = rand(0, populationSize);
+        while (parent2Index == parent1Index)
+        {
+            parent2Index = rand(0, populationSize-1);
+        }
+
+//        cout << "solution1 " << parent1Index << endl;
+//        printSolution(gc, population[parent1Index]);
+//        cout << "solution2" << parent2Index << endl;
+//        printSolution(gc, population[parent2Index]);
+        cout << populationSize << endl;
+        cout << parent1Index << "\t" << parent2Index << endl;
+
+        //crossover
+        offspring = Crossover(gc, population[parent1Index], population[parent2Index]);
+        solutionToMatrix(gc, offspring, currentConflictMatrix);
+        tabuSearch(5000, gc, offspring, currentConflictMatrix, adjList);
+
+        // Update populations
+        currentF = calculateF(gc, offspring);
+        if (currentF == 0)
+        {
+            cout << "fitting solution found." << endl;
+            printSolution(gc, offspring);
+            return;
+        }
+
+        // 更新最好的S
+        if (currentF < bestF)
+        {
+            bestF = currentF;
+            bestSolution = population[i];
+        }
+
+        population.push_back(offspring);
+        populationSize++;
+
+    }
+    cout << bestF << endl;
+
+
+}
+
+
+
+
+
+
+
+
+
 
 int main(int argc, char *argv[])
 {
@@ -531,21 +801,8 @@ int main(int argc, char *argv[])
 
 
     // Generating adjList for future search
-    vector<vector<int>> adjListVector = createAdjList(gc);
-    int** adjList = new int*[gc.nodeNum];
-    for (int i = 0; i < gc.nodeNum; i++)
-    {
-        adjList[i] = new int[gc.nodeNum];
-    }
-    for (int i = 0; i < gc.nodeNum; i++)
-    {
-        int j = 0;
-        for (; j < adjListVector[i].size(); j++)
-        {
-            adjList[i][j] = adjListVector[i][j];
-        }
-        adjList[i][j] = -1;
-    }
+
+    int** adjList = createAdjList(gc);
 
 
     // Creating 2d vector for Adjacent Color Table
@@ -572,6 +829,19 @@ int main(int argc, char *argv[])
     {
         solution[i] = rand(0, gc.colorNum);
     }
+
+    int *solution2 = new int[gc.nodeNum];
+    for (int i = 0; i < gc.nodeNum; i++)
+    {
+        solution2[i] = rand(0, gc.colorNum);
+    }
+
+    /*
+     * P是什么
+     * 禁忌的迭代次数应该是多少次
+     * 池应该怎么更新，好像就是直接加进去，那没事了
+     */
+
 //     cout << gc.nodeNum << endl;
 //     for (unsigned i = 0; i < gc.nodeNum; i++)
 //     {
@@ -624,7 +894,8 @@ int main(int argc, char *argv[])
     //     cout << adjacentColorTable[i][solution[i]] << endl;
     // }
 
-    tabuSearch(gc, solution, adjacentColorTable, adjList);
+//    tabuSearch(9999999, gc, solution, adjacentColorTable, adjList);
+    HEA(5, gc, adjList);
 
     end = clock();
     cout << "time = " << double(end - start) / CLOCKS_PER_SEC << "s" << endl;
