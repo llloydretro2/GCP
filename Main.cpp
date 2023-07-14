@@ -545,20 +545,26 @@ void printColorSet(vector<vector<int>>& colorSet)
     }
 }
 
-int findMaxColor(vector<vector<int>>& colorSet)
+int findMaxColor(GraphColoring& gc, int** colorSet)
 {
-    int setSize = -1;
     int chosenSet = -1;
-    int totalSize;
-    int currenLineSize;
+    int bestSize = -1;
+    int currenLineSize = 0;
 
-    totalSize = colorSet.size();
-    for (int i = 0; i < totalSize; i++)
+    for (int i = 0; i < gc.colorNum; i++)
     {
-        currenLineSize = colorSet[i].size();
-        if (currenLineSize > setSize)
+        currenLineSize = 0;
+
+        for (int j = 0; j < gc.nodeNum; ++j) {
+            if (colorSet[i][j] != -1)
+            {
+                currenLineSize++;
+            }
+        }
+
+        if (currenLineSize > bestSize)
         {
-            setSize = currenLineSize;
+            bestSize = currenLineSize;
             chosenSet = i;
         }
     }
@@ -566,38 +572,90 @@ int findMaxColor(vector<vector<int>>& colorSet)
     return chosenSet;
 }
 
-void updateColorSet(int color, int iter, vector<vector<int>>& chosen, vector<vector<int>>& other, vector<vector<int>>& offSpring)
+void updateColorSet(GraphColoring& gc, int color, int iter, int** chosen, int** other, int** offSpring)
 {
 
     int found = 0;
     int currentNode = -1;
 
-    while (chosen[color].size() > 0)
+    for (int i = 0; i < gc.nodeNum; ++i)
     {
 
-        // 逐个添加元素
-        currentNode = chosen[color].front();
-        chosen[color].erase(chosen[color].begin());
-        offSpring[iter].push_back(currentNode);
-
-        // 删除另一个的元素
-        found = 0;
-        for (int j = 0; j < other.size(); j++)
+        // 到达一行的结尾-2就跳出
+        if (chosen[color][i] == -2)
         {
-            for (int k = 0; k < other[j].size(); k++)
+            break;
+        }
+
+        // 获得当前节点并清空
+        if (chosen[color][i] != -1)
+        {
+            currentNode = chosen[color][i];
+            chosen[color][i] = -1;
+
+            // 添加到后代
+            offSpring[iter][i] = currentNode;
+
+            // 删除另一个里面的元素
+            found = 0;
+            for (int j = 0; j < gc.colorNum; j++)
             {
-                if (currentNode == other[j][k])
+                for (int k = 0; k < gc.nodeNum; k++)
                 {
-                    other[j].erase(other[j].begin() + k);
-                    found = 1;
+                    if (other[j][k] == -2)
+                    {
+                        break;
+                    }
+
+                    if (currentNode == other[j][k])
+                    {
+                        other[j][k] = -1;
+                        found = 1;
+                        break;
+                    }
+                }
+                if (found == 1)
+                {
                     break;
                 }
             }
-            if (found == 1)
-            {
-                break;
-            }
+
         }
+        // 当前位置是空-1的话，继续到下一个节点
+        else
+        {
+            continue;
+        }
+
+
+
+//        // 添加到后代
+//        for (int offspringIndex = 0; offspringIndex < gc.nodeNum; ++offspringIndex) {
+//            if (offSpring[iter][offspringIndex] == -2)
+//            {
+//                offSpring[iter][offspringIndex] = currentNode;
+//            }
+//            break;
+//        }
+
+        // 删除另一个的元素
+//        found = 0;
+//        for (int j = 0; j < gc.colorNum; j++)
+//        {
+//            for (int k = 0; k < gc.nodeNum; k++)
+//            {
+//                if (currentNode == other[j][k])
+//                {
+//                    other[j][k] = -1;
+//                    found = 1;
+//                    break;
+//                }
+//            }
+//            if (found == 1)
+//            {
+//                break;
+//            }
+//        }
     }
 
 }
@@ -607,17 +665,26 @@ int* Crossover(GraphColoring& gc, int* solution1, int* solution2)
     int maxColor = -1;
 
     // 创建颜色集
-    vector<vector<int>> colorSet1;
-    vector<vector<int>> colorSet2;
-    vector<vector<int>> offSpringColorSet;
+//    vector<vector<int>> colorSet1;
+//    vector<vector<int>> colorSet2;
+//    vector<vector<int>> offSpringColorSet;
+    int** colorSet1 = new int*[gc.colorNum];
+    int** colorSet2 = new int*[gc.colorNum];
+    int** offSpringColorSet = new int*[gc.colorNum];
 
-    for (unsigned i = 0; i < gc.colorNum; i++)
+    for (int i = 0; i < gc.colorNum; i++)
     {
-        vector<int> line;
-        colorSet1.push_back(line);
-        colorSet2.push_back(line);
-        offSpringColorSet.push_back(line);
+        colorSet1[i] = new int[gc.nodeNum];
+        colorSet2[i] = new int[gc.nodeNum];
+        offSpringColorSet[i] = new int[gc.nodeNum];
+        for (int j = 0; j < gc.nodeNum; ++j) {
+            colorSet1[i][j] = -2;
+            colorSet2[i][j] = -2;
+            offSpringColorSet[i][j] = -2;
+
+        }
     }
+
 
     int color1;
     int color2;
@@ -626,8 +693,22 @@ int* Crossover(GraphColoring& gc, int* solution1, int* solution2)
     {
         color1 = solution1[i];
         color2 = solution2[i];
-        colorSet1[solution1[i]].push_back(i);
-        colorSet2[solution2[i]].push_back(i);
+        for (int j = 0; j < gc.nodeNum; ++j) {
+            if (colorSet1[solution1[i]][j] == -2)
+            {
+                colorSet1[solution1[i]][j] = i;
+                break;
+            }
+        }
+
+        for (int j = 0; j < gc.nodeNum; ++j) {
+            if (colorSet2[solution1[i]][j] == -2)
+            {
+                colorSet2[solution1[i]][j] = i;
+                break;
+            }
+        }
+
     }
 
 
@@ -639,15 +720,15 @@ int* Crossover(GraphColoring& gc, int* solution1, int* solution2)
         if (i % 2 == 1)
         {
 
-            maxColor = findMaxColor(colorSet1);
-            updateColorSet(maxColor, i, colorSet1, colorSet2, offSpringColorSet);
+            maxColor = findMaxColor(gc, colorSet1);
+            updateColorSet(gc, maxColor, i, colorSet1, colorSet2, offSpringColorSet);
         }
 
         // 偶数S2
         else
         {
-            maxColor = findMaxColor(colorSet2);
-            updateColorSet(maxColor, i, colorSet2, colorSet1, offSpringColorSet);
+            maxColor = findMaxColor(gc, colorSet2);
+            updateColorSet(gc, maxColor, i, colorSet2, colorSet1, offSpringColorSet);
 
         }
     }
@@ -655,9 +736,20 @@ int* Crossover(GraphColoring& gc, int* solution1, int* solution2)
     // 输入到Solution
     for (int i = 0; i < gc.colorNum; ++i)
     {
-        for (int j = 0; j < offSpringColorSet[i].size(); j++)
+
+        for (int j = 0; j < gc.nodeNum; j++)
         {
-            offspringSolution[offSpringColorSet[i][j]] = i;
+
+            if (offSpringColorSet[i][j] == -2)
+            {
+                break;
+            }
+
+            if (offSpringColorSet[i][j] != -1)
+            {
+                offspringSolution[offSpringColorSet[i][j]] = i;
+            }
+
         }
     }
 
@@ -718,7 +810,7 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
     }
 
     // 开始杂交
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 9999; ++i) {
         cout << "Crossover " << i << endl;
 
         // Selecting parents, cannot be the same
@@ -729,17 +821,17 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
             parent2Index = rand(0, populationSize-1);
         }
 
-        cout << "solution1 " << parent1Index << endl;
-        printSolution(gc, population[parent1Index]);
-        cout << "solution2" << parent2Index << endl;
-        printSolution(gc, population[parent2Index]);
+//        cout << "solution1 " << parent1Index << endl;
+//        printSolution(gc, population[parent1Index]);
+//        cout << "solution2" << parent2Index << endl;
+//        printSolution(gc, population[parent2Index]);
         cout << populationSize << endl;
         cout << parent1Index << "\t" << parent2Index << endl;
 
         //crossover
         offspring = Crossover(gc, population[parent1Index], population[parent2Index]);
-        cout << "children" << endl;
-        printSolution(gc, offspring);
+//        cout << "children" << endl;
+//        printSolution(gc, offspring);
         solutionToMatrix(gc, offspring, currentConflictMatrix);
         tabuSearch(5000, gc, offspring, currentConflictMatrix, adjList);
 
@@ -763,7 +855,7 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
         populationSize++;
 
     }
-    cout << bestF << endl;
+    cout << "best F: " << bestF << endl;
 
 
 }
@@ -902,8 +994,8 @@ int main(int argc, char *argv[])
     //     cout << adjacentColorTable[i][solution[i]] << endl;
     // }
 
-//    tabuSearch(9999999, gc, solution, adjacentColorTable, adjList);
-    HEA(5, gc, adjList);
+    tabuSearch(9999999, gc, solution, adjacentColorTable, adjList);
+//    HEA(5, gc, adjList);
 
     end = clock();
     cout << "time = " << double(end - start) / CLOCKS_PER_SEC << "s" << endl;
