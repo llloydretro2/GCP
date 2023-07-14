@@ -63,6 +63,11 @@ void printSolution(GraphColoring& gc,  int* solution)
 {
     for (unsigned i = 0; i < gc.nodeNum; i++)
     {
+        if ((solution[i] < 0) || (solution[i] >= gc.colorNum))
+        {
+            cout << "-----------------" << i << "\t" << solution[i] << endl;
+            return;
+        }
         cout << "line " << i << "\t: " << solution[i] << endl;
     }
 }
@@ -691,6 +696,7 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
 
     }
 
+
     // Get the best solution from initial population
     for (int i = 0; i < populationSize; ++i) {
 
@@ -723,15 +729,17 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
             parent2Index = rand(0, populationSize-1);
         }
 
-//        cout << "solution1 " << parent1Index << endl;
-//        printSolution(gc, population[parent1Index]);
-//        cout << "solution2" << parent2Index << endl;
-//        printSolution(gc, population[parent2Index]);
+        cout << "solution1 " << parent1Index << endl;
+        printSolution(gc, population[parent1Index]);
+        cout << "solution2" << parent2Index << endl;
+        printSolution(gc, population[parent2Index]);
         cout << populationSize << endl;
         cout << parent1Index << "\t" << parent2Index << endl;
 
         //crossover
         offspring = Crossover(gc, population[parent1Index], population[parent2Index]);
+        cout << "children" << endl;
+        printSolution(gc, offspring);
         solutionToMatrix(gc, offspring, currentConflictMatrix);
         tabuSearch(5000, gc, offspring, currentConflictMatrix, adjList);
 
