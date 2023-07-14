@@ -756,6 +756,8 @@ int* Crossover(GraphColoring& gc, int* solution1, int* solution2)
         }
     }
 
+    printSolution(gc, offspringSolution);
+
     return offspringSolution;
 }
 
@@ -837,13 +839,14 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
 //        printSolution(gc, offspring);
         solutionToMatrix(gc, offspring, currentConflictMatrix);
 
-        tabuSearch(5000, gc, offspring, currentConflictMatrix, adjList);
+        tabuSearch(10000, gc, offspring, currentConflictMatrix, adjList);
         cout << calculateF(gc, offspring) << endl;
 
 
 
         // Update populations
         currentF = calculateF(gc, offspring);
+        cout << "bestF: " << bestF << " new F: " << currentF << endl;
 
         if (currentF == 0)
         {
@@ -853,14 +856,15 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
         }
 
         // 更新最好的S
-        if (currentF < bestF)
+        if (currentF <= bestF)
         {
             bestF = currentF;
             bestSolution = population[i];
+            population.push_back(offspring);
+            populationSize++;
         }
 
-        population.push_back(offspring);
-        populationSize++;
+
 
     }
     cout << "best F: " << bestF << endl;
