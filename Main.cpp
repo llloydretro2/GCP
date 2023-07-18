@@ -6,6 +6,7 @@
 #include <vector>
 #include <functional>
 #include <random>
+#include <cmath>
 
 using namespace std;
 using NodeId = int;
@@ -756,23 +757,83 @@ int* Crossover(GraphColoring& gc, int* solution1, int* solution2)
         }
     }
 
-    printSolution(gc, offspringSolution);
 
     return offspringSolution;
+}
+
+int calculateDistanceS1S2(GraphColoring& gc, int* s1, int* s2)
+{
+    int distance = 0;
+
+    for (int i = 0; i < gc.nodeNum; ++i) {
+        if (s1[i] != s2[i])
+        {
+            distance++;
+        }
+    }
+
+    return distance;
+}
+
+int calculateDistanceSolutionPopulation(GraphColoring& gc, int s1Index, vector<int*>& population)
+{
+    int* currentSolution;
+    int* s1 = population[s1Index];
+    int distance = gc.nodeNum +1;
+    int currentDistance;
+
+    for (int i = 0; i < population.size(); ++i) {
+        if (i != s1Index)
+        {
+            currentSolution = population[i];
+            currentDistance = calculateDistanceS1S2(gc, s1, currentSolution);
+
+            if (currentDistance < distance)
+            {
+                distance = currentDistance;
+            }
+        }
+
+    }
+
+    return distance;
+
+}
+
+float calculateGoodnessScore(GraphColoring& gc, int s1Index, vector<int*>& population)
+{
+    int* solution = population[s1Index];
+    int f_Si = calculateF(gc, solution);
+    int D_iP = calculateDistanceSolutionPopulation(gc, s1Index, population);
+    float expo = 0.08 * gc.nodeNum / D_iP;
+    float h_iP = f_Si + std::exp(expo);
+
+    return h_iP;
 }
 
 void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
 {
     int populationSize = initialPopulationSize;
+    int populationSizeTemp;
     int bestF = gc.nodeNum * gc.nodeNum;
     int currentF;
     int parent1Index;
     int parent2Index;
+    int worstSolution;
+    int secondWorstSolution;
+    double worstGoodnessScore;
+    double secondWorstGoodnessScore;
+    double currentGoodnessScore;
     vector<int*> population;
+    vector<int*> populationTemp;
     int* currentSolution;
+    int* currentDistanceSolution;
     int* bestSolution;
     int* offspring;
     int** currentConflictMatrix = new int*[gc.nodeNum];
+
+
+
     for (int i = 0; i < gc.nodeNum; i++)
     {
         currentConflictMatrix[i] = new int[gc.colorNum];
@@ -789,17 +850,8 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
     for (int i = 0; i < populationSize; ++i)
     {
         solutionToMatrix(gc, population[i], currentConflictMatrix);
-        tabuSearch(5000, gc, population[i], currentConflictMatrix, adjList);
-
-    }
-
-
-    // Get the best solution from initial population
-    for (int i = 0; i < populationSize; ++i) {
-
+        tabuSearch(100000, gc, population[i], currentConflictMatrix, adjList);
         currentF = calculateF(gc, population[i]);
-
-        // 如果已经解决了就直接跳出程序
         if (currentF == 0)
         {
             cout << "fitting solution found." << endl;
@@ -812,10 +864,12 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
         {
             bestF = currentF;
         }
+
     }
 
+
     // 开始杂交
-    for (int i = 0; i < 99999; ++i) {
+    for (int i = 0; i < 9999; ++i) {
         cout << "Crossover " << i << endl;
 
         // Selecting parents, cannot be the same
@@ -839,15 +893,9 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
 //        printSolution(gc, offspring);
         solutionToMatrix(gc, offspring, currentConflictMatrix);
 
-        tabuSearch(10000, gc, offspring, currentConflictMatrix, adjList);
-        cout << calculateF(gc, offspring) << endl;
-
-
-
-        // Update populations
+        tabuSearch(100000, gc, offspring, currentConflictMatrix, adjList);
         currentF = calculateF(gc, offspring);
-        cout << "bestF: " << bestF << " new F: " << currentF << endl;
-
+        cout << "offspring f: " << currentF << endl;
         if (currentF == 0)
         {
             cout << "fitting solution found." << endl;
@@ -855,17 +903,82 @@ void HEA(int initialPopulationSize, GraphColoring& gc, int** adjList)
             return;
         }
 
-        // 更新最好的S
-        if (currentF <= bestF)
-        {
-            bestF = currentF;
-            bestSolution = population[i];
-            population.push_back(offspring);
-            populationSize++;
+
+
+
+        // Update populations
+        worstSolution = -1;
+        secondWorstSolution = -1;
+        worstGoodnessScore = -1;
+        secondWorstGoodnessScore = -1;
+
+        populationTemp = population;
+        populationTemp.push_back(offspring);
+
+        populationSizeTemp = populationSize + 1;
+
+        for (int j = 0; j < populationSizeTemp; ++j) {
+            currentGoodnessScore = calculateGoodnessScore(gc, j, populationTemp);
+
+            if (currentGoodnessScore > worstGoodnessScore)
+            {
+                worstSolution = j;
+                worstGoodnessScore = currentGoodnessScore;
+            }
+            else if (currentGoodnessScore > secondWorstGoodnessScore)
+            {
+                secondWorstSolution = j;
+                secondWorstGoodnessScore = currentGoodnessScore;
+            }
+
         }
 
+        if (worstSolution != (populationSizeTemp - 1))
+        {
+            population[worstSolution] = offspring;
+            cout << "1: " << worstSolution << " -> " << "offspring" << endl;
+
+            currentF = calculateF(gc, offspring);
+            if (currentF == 0)
+            {
+                cout << "fitting solution found." << endl;
+                printSolution(gc, offspring);
+                return;
+            }
+            if (currentF <= bestF)
+            {
+                bestF = currentF;
+                bestSolution = offspring;
+            }
+
+        }
+        else if(rand(0, 10) < 2)
+        {
+            if (secondWorstSolution != (populationSizeTemp - 1))
+            {
+                population[secondWorstSolution] = offspring;
+                cout << "2: " << secondWorstSolution << " -> " << "offspring" << endl;
 
 
+                currentF = calculateF(gc, offspring);
+                if (currentF == 0)
+                {
+                    cout << "fitting solution found." << endl;
+                    printSolution(gc, offspring);
+                    return;
+                }
+                if (currentF <= bestF)
+                {
+                    bestF = currentF;
+                    bestSolution = offspring;
+                }
+
+            }
+
+        }
+
+        cout << "best F: " << bestF << endl;
+        cout << endl;
     }
     cout << "best F: " << bestF << endl;
 
@@ -1008,7 +1121,7 @@ int main(int argc, char *argv[])
 
     // seed: 785756758  500.1    tabu: 42.5s    HEA:
 //    tabuSearch(9999999, gc, solution, adjacentColorTable, adjList);
-    HEA(5, gc, adjList);
+    HEA(10, gc, adjList);
 
     end = clock();
     cout << "time = " << double(end - start) / CLOCKS_PER_SEC << "s" << endl;
